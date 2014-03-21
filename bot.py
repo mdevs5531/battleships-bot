@@ -22,13 +22,33 @@ class Placement(object):
             if direction == 'horizontal':
                 x = point[0]
                 for y in range(point[1], point[1] + length):
+                    if y == point[1] and y > 0:
+                        if self.state[x][y - 1] != 0:
+                            return False
+                    if y == point[1] + length - 1 and y < 7:
+                        if self.state[x][y + 1] != 0:
+                            return False
                     if self.state[x][y] != 0:
+                        return False
+                    if x > 0 and self.state[x - 1][y] != 0:
+                        return False
+                    if x < 7 and self.state[x + 1][y] != 0:
                         return False
                 return True
             elif direction == 'vertical':
                 y = point[1]
                 for x in range(point[0], point[0] + length):
+                    if x == point[0] and x > 0:
+                        if self.state[x - 1][y] != 0:
+                            return False
+                    if x == point[0] + length - 1 and x < 7:
+                        if self.state[x + 1][y] != 0:
+                            return False
                     if self.state[x][y] != 0:
+                        return False
+                    if y > 0 and self.state[x][y - 1] != 0:
+                        return False
+                    if y < 7 and self.state[x][y + 1] != 0:
                         return False
                 return True
         except:

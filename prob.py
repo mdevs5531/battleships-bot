@@ -3,6 +3,7 @@
 UNKNOWN = 0
 HIT = 1
 MISS = 2
+SUNK = 3
 
 
 def str2tuple(string_point):
@@ -30,10 +31,18 @@ class Probability(object):
                 self.probs[point] = 0
                 self.state[point] = UNKNOWN
                 self.fits[point] = 0
-        for hit in state['hit']:
-            self.hit(str2tuple(hit))
-        for miss in state['missed']:
-            self.miss(str2tuple(miss))
+        me = str(state['you'])
+        for move in state['moves']:
+            if move[0:1] != me:
+                continue
+            point = str2tuple(move[1:3])
+            result = move[3:4]
+            if result == '1':
+                self.miss(point)
+            elif result == '3':
+                self.hit(point)
+            elif result == '4':
+                self.sunk(point, int(state['destroyed'].pop(0)))
         self.calculateFits()
         self.calculateAdjacents()
 
@@ -49,11 +58,13 @@ class Probability(object):
         for y in range(8):
             for x in range(8):
                 if self.state[(x, y)] == HIT:
-                    print ' ###  ',
+                    print ' #  ',
                 elif self.state[(x, y)] == MISS:
-                    print '  *   ',
+                    print ' *  ',
+                elif self.state[(x, y)] == SUNK:
+                    print '### ',
                 else:
-                    print '%5d ' % self.fits[(x, y)],
+                    print '%3d ' % self.fits[(x, y)],
             print ''
 
     def doesShipFit(self, length, point, direction):
@@ -61,13 +72,15 @@ class Probability(object):
         if direction == 'horizontal':
             y = point[1]
             for x in range(point[0], point[0] + length):
-                if self.state[(x, y)] == MISS:
+                state = self.state[(x, y)]
+                if state == MISS or state == SUNK:
                     fits = False
                     break
         else:
             x = point[0]
             for y in range(point[1], point[1] + length):
-                if self.state[(x, y)] == MISS:
+                state = self.state[(x, y)]
+                if state == MISS or state == SUNK:
                     fits = False
                     break
         return fits
@@ -94,21 +107,28 @@ class Probability(object):
                             self.fits[fit_point] += fit
 
     def calculateAdjacents(self):
+        def check(point, direction):
+            new_point = (point[0] + direction[0], point[1] + direction[1])
+            if new_point in self.state:
+                state = self.state[new_point]
+                if state == MISS or state == SUNK:
+                    return 0
+                elif state == HIT:
+                    return 30 + check(new_point, direction)
+            return 0
+
         def mark(point, state):
             if state == HIT:
                 if point in self.fits:
-                    self.fits[point] += 10
+                    self.fits[point] += 30
 
+        directions = ((0, 1), (0, -1), (1, 0), (-1, 0))
         for x in range(0, 8):
             for y in range(0, 8):
-                if x > 0:
-                    mark((x, y), self.state[(x - 1, y)])
-                if x < 7:
-                    mark((x, y), self.state[(x + 1, y)])
-                if y > 0:
-                    mark((x, y), self.state[(x, y - 1)])
-                if y < 7:
-                    mark((x, y), self.state[(x, y + 1)])
+                point = (x, y)
+                if point in self.fits:
+                    for direction in directions:
+                        self.fits[point] += check(point, direction)
 
     def hit(self, point):
         self.state[point] = HIT
@@ -118,15 +138,45 @@ class Probability(object):
         self.state[point] = MISS
         del self.fits[point]
 
+    def sunk(self, point, length):
+        x, y = point
+        possible_size = 1
+        while x - possible_size >= 0 and self.state[(x - possible_size, y)] == HIT:
+            possible_size += 1
+        if possible_size >= length:
+            for x in range(x - length + 1, x + 1):
+                self.state[(x, y)] = SUNK
+            return
+        possible_size = 1
+        while x + possible_size <= 7 and self.state[(x + possible_size, y)] == HIT:
+            possible_size += 1
+        if possible_size >= length:
+            for x in range(x, x + length):
+                self.state[(x, y)] = SUNK
+            return
+        possible_size = 1
+        while y - possible_size >= 0 and self.state[(x, y - possible_size)] == HIT:
+            possible_size += 1
+        if possible_size >= length:
+            for y in range(y - length + 1, y + 1):
+                self.state[(x, y)] = SUNK
+            return
+        possible_size = 1
+        while y + possible_size <= 7 and self.state[(x, y + possible_size)] == HIT:
+            possible_size += 1
+        if possible_size >= length:
+            for y in range(y, y + length):
+                self.state[(x, y)] = SUNK
+            return
+
+
 if __name__ == '__main__':
     state = {
-        'hit': ['23', '24'],
-        'missed': ['43', '62', '01']
+        'moves': ['0613', '0621', '0513', '0413', '0314'],
+        'you': 0,
+        'destroyed': ['3']
     }
     while(True):
         p = Probability(state)
         p.printState()
-        move = p.getMaxMove()
-        if not move:
-            break
-        state['missed'].append(move)
+        break
