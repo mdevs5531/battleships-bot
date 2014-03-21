@@ -17,6 +17,7 @@ def tuple2str(tuple_point):
 class Probability(object):
 
     def __init__(self, state):
+        self.log = open('prob.log', 'a')
         self.free = []
         self.state = {}
         self.fits = {}
@@ -32,6 +33,7 @@ class Probability(object):
                 self.state[point] = UNKNOWN
                 self.fits[point] = 0
         me = str(state['you'])
+        sinkings = 0
         for move in state['moves']:
             if move[0:1] != me:
                 continue
@@ -42,7 +44,10 @@ class Probability(object):
             elif result == '3':
                 self.hit(point)
             elif result == '4':
+                sinkings += 1
                 self.sunk(point, int(state['destroyed'].pop(0)))
+        if sinkings:
+            self.log.write(str(state) + '\n')
         self.calculateFits()
         self.calculateAdjacents()
 
@@ -52,6 +57,7 @@ class Probability(object):
             return None
         max_value = max(items, key=lambda x: x[1])
         move = filter(lambda x: x[1] == max_value[1], items)[0][0]
+        self.log.close()
         return tuple2str(move)
 
     def printState(self):
