@@ -286,6 +286,7 @@ class Placement(object):
         return False
 
     def get_random_placement(self, length):
+        ''' Find a random position on the board for a ship '''
         direction = ['vertical', 'horizontal'][random.randint(0, 1)]
         point = [random.randint(0, 7), random.randint(0, 8 - length)]
         if direction == 'horizontal':
@@ -293,6 +294,11 @@ class Placement(object):
         return (direction, point)
 
     def place_ship(self, length):
+        ''' Find a valid random position on the board
+
+        Making sure the ship doesn't collide with another one
+        already on the board
+        '''
         direction, point = self.get_random_placement(length)
         while not self.valid_placement(point, length, direction):
             direction, point = self.get_random_placement(length)
