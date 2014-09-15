@@ -27,6 +27,7 @@ class LikelyhoodBot(object):
     HIT = 1
     MISS = 2
     SUNK = 3
+    USELESS = 4
 
     def __init__(self, state):
         # Seed your random number generator!
